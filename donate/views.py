@@ -36,10 +36,10 @@ def initiate_payment(request):
     country = request.POST.get("Country")
     state = request.POST.get("State")
     email = request.POST.get("Email")
-    amount = request.POST.get("Amount")
+    amount = request.POST.get("FinalAmount")
     gender = request.POST.get("Gender")
-    fosses = request.POST.get("FOSS")
-    languages = request.POST.get("Language")
+    fosses = request.POST.get("foss")
+    languages = request.POST.get("languages")
     
     # newpayee = Payee()
     # newpayee.name  =  payee

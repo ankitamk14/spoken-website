@@ -367,6 +367,7 @@ def ajax_add_foss(request):
     selectedfoss = {}
     try:
         langs = json.loads(request.POST.get('langs', []))
+        
     except:
         langs = []
     try:
@@ -460,7 +461,15 @@ def ajax_show_added_foss(request):
                 fsize += os.path.getsize(filepath)
 
         fsize_total += fsize
-        data += '<tr><td name="foss[]">{}</td><td name="langs[]">{}</td><td name="size">{}</td></tr>'.format(foss.foss, langs, humansize(fsize))
+        data += '<tr>\
+        <td>\
+        <input type="text" name="foss" value="{}" readonly style="border:none;background-color:#F5F5F5;width:100%;"/>\
+        </td>\
+        <td>\
+        <input type="text" name="languages" value="{}" readonly style="border:none;background-color:#F5F5F5;width:100%"/>\
+        </td>\
+        <td name="size">{}</td>\
+        </tr>'.format(foss.foss, langs, humansize(fsize))
 
     fsize = 0.0
     languages.add(eng_rec.name)

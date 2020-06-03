@@ -184,10 +184,12 @@
 		<label for="mod_amount" class="col-sm-6 col-form-label">Amount</label>
          </div>
 	      <table id ="display-foss" class="added-foss table table-condensed table-bordered table-hover">
-                    </table>
+            </table>
+
 
 	<button  class="btn btn-primary mb-2 make-payment-btn">Make Payment</button>
 	
+
   	</div>        
 </form>
         </div>
@@ -331,6 +333,7 @@
                                     header = '<caption class="col-left"><b>Selected FOSS List:<span class="pull-right"> ~ Total Size : '+data[1]+'</span></b></caption><tr><th>FOSS</th><th>Languages</th><th>Size</th>';
                                     if(data) {
                                         $('.added-foss').html(header + data[0]);
+
                                         console.log(data);
                                         if(data[2][0]=='UR') {
                                         var message = '<i>User not registered.<br> Kinldy <a href="/accounts/login">Login</a> if you are registered.</i>'
@@ -339,6 +342,7 @@
 					 $("#rate-div").show();
 					 $("#user_file_size").html("Amount to Pay ");
                                          document.getElementById("amount_to_pay").value = data[2][1];
+                                         document.getElementById("mod_amount").value = data[2][1];
                                          document.getElementById("orig_value").value = data[2][1];
 
                                           }
@@ -394,17 +398,19 @@ if ($.cookie('modal_status') != '1')
             $(".navbar-fixed-top").css({'top' : '0px', 'position' : 'fixed'});
             $("#header-wrapper").css({'height' : '0px'});
         });
-$('#amount_to_pay').on("keyup", function(){
+$('#amount_to_pay').on("focusout", function(){
 
 var value = $('#amount_to_pay').val();
 var orig_value = $('#orig_value').val();
 if(parseInt(orig_value)>parseInt(value))
 {
-alert("Min Amount to pay : "+orig_value);
-document.getElementById("amount_to_pay").value = orig_value;
+// alert("Min Amount to pay : "+orig_value);
+document.getElementById("amount_to_pay").value = parseInt(orig_value);
 }
 else{
 document.getElementById("amount_to_pay").value = parseInt(value);
+document.getElementById("mod_amount").value = parseInt(value);
+
 }
 });
 
