@@ -27,6 +27,8 @@ from mdldjango.models import MdlUser
 from mdldjango.urls import *
 from django.template.context_processors import csrf
 
+from donate.models import Payee
+
 def dispatcher(request, permalink=''):
     if permalink == '':
         return HttpResponseRedirect('/')
@@ -288,10 +290,16 @@ def account_view_profile(request, username):
       profile = Profile.objects.get(user = user)
     except:
       profile = create_profile(user)
+
+    
     context = {
         'profile' : profile,
         'media_url' : settings.MEDIA_URL,
     }
+    if request.user.is_authenticated():
+        payee_list = Payee.objects.prefetch_related('cdfosslanguages_set__foss','cdfosslanguages_set__lang').filter(user=request.user)
+        context['payee_list'] = payee_list
+        
     return render(request, 'cms/templates/view-profile.html', context)
 
 def password_reset(request):
