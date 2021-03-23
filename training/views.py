@@ -29,6 +29,7 @@ from events.views import is_resource_person, is_administrator, get_page
 from events.filters import ViewEventFilter, PaymentTransFilter, TrEventFilter
 from cms.sortable import *
 from cms.views import create_profile, send_registration_confirmation
+from cms.models import Profile
 from certificate.views import _clean_certificate_certificate
 from django.http import HttpResponse
 import os, sys
@@ -132,8 +133,10 @@ def register_user(request):
 	
 	if request.user.is_authenticated():
 		user = request.user
+		profile = Profile.objects.get(user=user)
 		form.fields["name"].initial = user.get_full_name()
 		form.fields["email"].initial = getattr(user, 'email')
+		form.fields["phone"].initial = profile.phone
 		form.fields['email'].widget.attrs['readonly'] = True
 		if user.profile_set.all():
 			try:
@@ -166,6 +169,7 @@ def reg_success(request, user_type):
 	if request.method == 'POST':
 		name = request.POST.get('name')
 		email = request.POST.get('email')
+		phone = request.POST.get('phone')
 		event_obj = request.POST.get('event')
 		event = TrainingEvents.objects.get(id=event_obj)
 		form = RegisterUser(request.POST)
@@ -194,6 +198,9 @@ def reg_success(request, user_type):
 
 				form_data.save()
 			event_name = event.event_name
+			userprofile = Profile.objects.get(user=request.user)
+			userprofile.phone = phone
+			userprofile.save()
 			if user_type == 'paid':
 				context = {'participant_obj':form_data}
 				return render(request, template_name, context)
@@ -246,7 +253,7 @@ def listevents(request, role, status):
 	TrMngerEvents = TrainingEvents.objects.filter(state__in=states).order_by('-event_start_date')
 	
 
-	status_list = {'ongoing': 0, 'completed': 1, 'closed': 2,}
+	status_list = {'ongoing': 0, 'completed': 1, 'closed': 2, 'expired': 3}
 	roles = ['rp', 'em']
 	if role in roles and status in status_list:
 		if status == 'ongoing':
@@ -255,6 +262,8 @@ def listevents(request, role, status):
 			queryset =TrMngerEvents.filter(training_status=1, event_end_date__lt=today)
 		elif status == 'closed':
 			queryset = TrMngerEvents.filter(training_status=2)
+		elif status == 'expired':
+			queryset = TrMngerEvents.filter(training_status=0, event_end_date__lt=today)
 
 		header = {
 		1: SortableHeader('#', False),
@@ -297,7 +306,8 @@ def listevents(request, role, status):
 		10: SortableHeader('Participant Count', True),
 		11: SortableHeader('Action', False)
 		}
-
+		event_type = request.GET.get('event_type', None)
+		pcount, mcount, fcount = get_all_events_detail(queryset, event_type) if event_type else get_all_events_detail(queryset)
 		raw_get_data = request.GET.get('o', None)
 		queryset = get_sorted_list(
 			request,
@@ -320,6 +330,9 @@ def listevents(request, role, status):
 	context['header'] = header
 	context['today'] = today
 	context['ordering'] = get_field_index(raw_get_data)
+	context['pcount'] = pcount
+	context['mcount'] = mcount
+	context['fcount'] = fcount
 
 	return render(request,'event_status_list.html',context)
 
@@ -443,7 +456,7 @@ class ParticipantCreateView(CreateView):
 			user = User(username=row[2], email=row[2].strip(), first_name=row[0], last_name=row[1])
 			user.set_password(row[0]+'@ST'+str(random.random()).split('.')[1][:5])
 			user.save()
-			create_profile(user, '')
+			create_profile(user, row[8].strip())
 			send_registration_confirmation(user)
 			return user
 
@@ -909,3 +922,48 @@ def transaction_csv(request, purpose):
 				record.created,
 				phone])
 	return response
+
+def reopen_event(request, eventid):
+	context = {}
+	user = request.user
+	if not (user.is_authenticated() and is_resource_person(user)):
+		raise PermissionDenied()
+	
+	event = TrainingEvents.objects.get(id=eventid)
+	if event:
+		event.training_status = 0 #close event
+		event.save()
+		messages.success(request, 'Event reopened successfully. As the event date over you will find this entry under expired tab.')
+	else:
+		messages.error(request, 'Request not sent.Please try again.')
+	return HttpResponseRedirect("/training/event/rp/completed/")
+
+
+class EventParticipantsListView(ListView):
+	queryset = ""
+	unsuccessful_payee = ""
+	paginate_by = 500
+	success_url = ""
+
+	def dispatch(self, *args, **kwargs):
+		self.event = TrainingEvents.objects.get(pk=kwargs['eventid'])
+		main_query = Participant.objects.filter(event_id=kwargs['eventid'])
+
+		self.queryset =	main_query.filter(Q(payment_status__status=1)| Q(registartion_type__in=(1,3)))
+		# self.unsuccessful_payee = main_query.filter(payment_status__status__in=(0,2))
+
+		
+		if self.event.training_status == 1:
+			self.queryset = main_query.filter(reg_approval_status=1)
+
+		if self.event.training_status == 2:
+			self.queryset = self.event.eventattendance_set.all()
+		return super(EventParticipantsListView, self).dispatch(*args, **kwargs)
+
+
+	def get_context_data(self, **kwargs):
+		context = super(EventParticipantsListView, self).get_context_data(**kwargs)
+		
+		context['event'] = self.event
+		context['eventid'] = self.event.id
+		return context
