@@ -147,7 +147,7 @@ def get_schoolfosslist(request):
     List all fosses for school website.
     """
     if request.method == 'GET':
-        fosses = FossCategory.objects.filter(status=1, available_for_nasscom=1)
+        fosses = FossCategory.objects.filter(status=1)
         serializer = FossSerializer(fosses, many=True)
         return JsonResponse(serializer.data, safe=False)
 
@@ -199,7 +199,8 @@ class RelianceJioAPI(APIView):
         if jio_data:
             return Response(jio_data)
         else:
-            foss = FOSS_API_LIST
+            #foss = FOSS_API_LIST
+            foss = FossCategory.objects.filter(available_for_jio=True).values_list('id', flat=True)
             lists=[]
             category_list=[]
             lang_en='English'
