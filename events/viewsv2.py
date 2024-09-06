@@ -2807,13 +2807,17 @@ def payment_success(request):
           context['name'] = sd.name
           context['date'] = sd.created
           transaction = add_transaction(purpose, sd.id, requestType, userId, amount, reqId, transId, refNo, provId, status, msg)
+          print(f"\033[92m donate: added transaction ******* \033[0m")
           #send email
           email_status, status_msg = send_transaction_email(sd.email, context)
           sd.mail_status = email_status
           sd.mail_response = status_msg
+          print(f"\033[92m donate: save data ******* \033[0m")
           sd.save()
         except Exception as e:
           messages.error(request, 'Transaction failed')
+          print(f"\033[92m donate: Exception ******* {e} \033[0m")
+        print(f"\033[92m donate: return status template ******* \033[0m")
         return render(request, template, context)
       #Subscription Responses
       if purpose == 'Subscription':
@@ -2971,7 +2975,6 @@ def payment_reconciliation_update(request):
   STresponsedata = ''
   STresponsedata = str(reqId)+str(userId)+transId+refNo+amount+status+msg+purpose+CHANNEL_KEY
   STresponsedata_hexa = display.value(str(STresponsedata))
-
   if STresponsedata_hexa == random:
     if purpose == 'Subscription':
       try:

@@ -18,6 +18,7 @@ def send_transaction_email(user_email, transaction_details):
     from_email = 'no-reply@spoken-tutorial.org'
     to = user_email
     try:
+        print(f"\033[93m donate: Send mail \033[0m")
         send_mail(subject, plain_message, from_email, [to], html_message)
     except BadHeaderError:
         return False, "Invalid header found"
@@ -32,5 +33,6 @@ def send_transaction_email(user_email, transaction_details):
     except smtplib.SMTPConnectError:
         return False, "Failed to connect to the email server"
     except Exception as e:
+        print(f"\033[93m donate: Mail exception \033[0m")
         return False, str(e)
     return True, "success"
