@@ -388,17 +388,13 @@ def school_donation(request):
             donation = form.save(commit=False)
             reqId = CHANNEL_ID + str(display.value(datetime.now().strftime('%Y%m%d%H%M%S'))[0:20])
             donation.reqId = reqId
-            # donation.save()
-            # donation.reqId = CHANNEL_ID+ str(donation.id)
             donation.save()
             purpose = "school_donation"
             data = get_final_data(request, donation, purpose)
             try:
                 return render(request, 'payment_status.html', data)
             except Exception as e:
-                print("donate: error **", e)
-                # form.add_error(None, 'An error occurred. Please try again later.')
-                form.add_error(None, str(e))
+                form.add_error(None, 'An error occurred. Please try again later.')
                 return render(request, 'donate/school_donation.html', {'form': form})
     else:
         form = SchoolDonationForm()
