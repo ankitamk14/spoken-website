@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^news/(?P<cslug>[\w-]+)/(?P<slug>[\w-]+)/$',  news_view, name="news_view"),
     url(r'^keyword-search/$',  keyword_search, name="keyword-search"),
     url(r'^watch/([0-9a-zA-Z-+%\(\).,\' ]+)/([0-9a-zA-Z-+%\(\).,\' ]+)/([a-zA-Z-]+)/$',  watch_tutorial, name="watch_tutorial"),
+    url(r'^subscription/$',  subscription, name="keyword-search"),
     url(r'^What_is_a_Spoken_Tutorial/$',  what_is_spoken_tutorial, name="what_is_spoken_tutorial"),
     url(r'^get-language/(?P<tutorial_type>[\w-]+)/$',  get_language, name="get_language"),
     url(r'^testimonials/new/$',  testimonials_new, name="testimonials_new"),
@@ -76,6 +77,8 @@ urlpatterns = [
     url(r'^workshops/academic_details/(?P<state>.+)/$',  academic_details_state, name='academic_details_state'),
     url(r'^resource_center_map_details/(?P<state>.+)/$',  academic_details_state, name='academic_details_state'),
     url(r'^workshops/resource_center_details/$',  view_college, name='view_college'),
+    #donate
+    # url(r'^donate', donate, name='donate'),
     # url(r'^statistics/training/$',  statistics_training', name='statistics_training'),
 
     # events urls
@@ -100,7 +103,7 @@ urlpatterns = [
     url(r'^certificate/', include('certificate.urls', namespace='certificate')),
 
     url(r'^creation/', include('creation.urls', namespace='creation')),
-    url(r'^nicedit/', include('nicedit.urls')),
+    # url(r'^nicedit/', include('nicedit.urls')),
     # url(r'^migration/creation/', include('creationmigrate.urls', namespace='creationmigrate')),
     # url(r'^migration/events/', include('eventsmigration.urls', namespace='eventsmigration')),
     #url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT, 'show_indexes': False}),
@@ -137,5 +140,11 @@ urlpatterns = [
     
     #nep book fiar
     url(r'wbf-book-fair-2023', bookfair,name="bookfair"),
+    url(r'temp', temp,name="bookfair"),
+    # url(r'^silk/', include('silk.urls', namespace='silk'))
+
     
+
 ] + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+
+# urlpatterns += [url(r'^silk/', include('silk.urls', namespace='silk'))]

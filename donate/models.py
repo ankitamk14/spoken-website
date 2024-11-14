@@ -135,3 +135,40 @@ class SchoolDonation(models.Model):
 
 class SchoolDonationTransactions(TransactionCommonInfo):
     paymentdetail = models.ForeignKey(SchoolDonation, on_delete=models.PROTECT)
+
+class FossSubscription(models.Model):# Subscription for selected fosses
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    reqId = models.CharField(max_length=100, default='')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    note = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateField(auto_now=True)
+    mail_status = models.BooleanField(default=False)
+    mail_response = models.CharField(max_length=250)
+    expiry = models.DateField(blank=True, null=True)
+
+class UserSubscription(models.Model): #Subscription for all fosses
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    reqId = models.CharField(max_length=100, default='')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    note = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateField(auto_now=True)
+    mail_status = models.BooleanField(default=False)
+    mail_response = models.CharField(max_length=250)
+    expiry = models.DateField(blank=True, null=True)
+
+class FossSubscriptionTransactions(TransactionCommonInfo):
+    paymentdetail = models.ForeignKey(FossSubscription, on_delete=models.PROTECT)
+
+class UserSubscriptionTransactions(TransactionCommonInfo):
+    paymentdetail = models.ForeignKey(UserSubscription, on_delete=models.PROTECT)
+
+
+class UserFossAccess(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    subscription = models.ForeignKey(FossSubscription, on_delete=models.PROTECT)
+    foss = models.ForeignKey(FossCategory, on_delete=models.PROTECT)
+    lang = models.ForeignKey(Language, on_delete=models.PROTECT, null=True, blank=True)
+    level = models.ForeignKey(Level,null=True,blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)

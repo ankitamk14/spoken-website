@@ -1,0 +1,423 @@
+{% extends 'spoken/templates/base.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block uncompresscssblock %}
+<!-- Include Bootstrap Multiselect CSS -->
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css"> -->
+<!-- Include Select2 CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+
+
+
+{% endblock %}
+{% block compressinlinecssblock %}
+    <style type="text/css">
+   
+    .total-amount {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        display: none;
+    }
+    .total-amount h4 {
+        margin: 0;
+        font-weight: bold;
+    }
+    .amount {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .subscription-container {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.subscription-box {
+    border: 1px solid #0073b7; /* Border color similar to the blue theme */
+    border-radius: 5px;
+    padding: 15px;
+    background-color: #f2f6ff; /* Light background color */
+    margin-bottom: 20px;
+}
+
+.not-subscribed {
+    background-color: #ffe6e6;
+    color: #d9534f;
+    border-color: #d9534f;
+}
+
+.subscription-box h3 {
+    font-size: 1.25em;
+    color: #0073b7; /* Heading color to match theme */
+    margin-bottom: 10px;
+}
+
+.subscription-details {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #cce0ff;
+    border-radius: 4px;
+    background-color: #eaf3ff;
+    font-size: 16px;
+}
+
+.subscription-details h4 {
+    font-size: 1.1em;
+    color: #0073b7;
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.subscription-details p {
+    margin: 5px 0;
+}
+
+.subscription-details h4::before {
+    content: '✔️';
+    margin-right: 5px;
+    color: green;
+}
+.icon{
+    color: black;
+    margin-right: 8px;
+}
+     
+.foss-header {
+    background: linear-gradient(90deg, #e3f2fd, #bbdefb); /* Subtle gradient */
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px; /* Spacing below the header */
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Light shadow for depth */
+    border-left: 5px solid #1976d2; /* Accent border on the left */
+}
+
+.foss-icon {
+    font-size: 28px;
+    color: #1976d2; /* Icon color to match the border */
+    margin-right: 10px;
+}
+
+.foss-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0d47a1; /* Darker blue for the text */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.list-unstyled li{
+    font-size: 16px;
+}
+.panel-body h4{
+    margin-bottom: 12px;
+}
+   
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    {{ type }}
+    <form method="POST">
+        <input type="hidden" name="userid" value="{{ user.id}}">
+       
+        <div class="container">
+            <div class="foss-header">
+                <i class="fa fa-book foss-icon"></i>
+                <span class="foss-title">FOSS Subscription</span>
+            </div>
+            <!-- --- -->
+            {% if valid_active_user_subscription %}
+                <div class="alert alert-success" role="alert">
+                    <p>You are a subscribed user and have access to all FOSS tutorials!</p>
+                </div>
+                
+            {% else %}  
+            <div class="row">
+                <!-- Option 1: INR 99 for One FOSS -->
+                <div class="col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Option 1: Selected FOSS Access</h3>
+                        </div>
+                        <div class="panel-body">
+                            <h4 class="text-primary">INR 99 / year  (for 1 Course)</h4>
+                            <ul class="list-unstyled">
+                                <li><i class="fa fa-check-circle text-success"></i> Access to all tutorials of selected FOSS</li>
+                                <li><i class="fa fa-check-circle text-success"></i> Download tutorials, SRT files, and assignments</li>
+                                <li><i class="fa fa-times-circle text-danger"></i> No access to other FOSS tutorials</li>
+                            </ul>
+                            <!-- Dropdown to select a FOSS -->
+                            
+                            <div>
+                                <label for="fossSelect">Select FOSSs:</label>
+                                <select id="fossSelect" class="form-control" multiple="multiple" name="fosses">
+                                    {% for foss in fosses %}
+                                        <option value="{{foss.id}}">{{foss.foss}}</option>
+                                    {% endfor %}
+                                    <option value="foss1">FOSS 1</option>
+                                    <option value="foss2">FOSS 2</option>
+                                    <option value="foss3">FOSS 3</option>
+                                </select>
+                            </div>
+                            <div class="total-amount text-center">
+                                <h4>Total Amount: <span class="amount text-success">INR 100</span></h4>
+                            </div>
+                            <button class="btn btn-primary" type="submit" style="width: 100%;margin-top: 15px;" name="action" value="partial">Make Payment</button>
+                            <!-- <a href="/make-payment/99" class="btn btn-primary btn-block">
+                                <i class="fa fa-credit-card"></i> Make Payment
+                            </a> -->
+                            
+                        </div>
+                    </div>
+                </div>
+        
+                <!-- Option 2: INR 499 for All FOSS -->
+                <div class="col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Option 2: All FOSS Access</h3>
+                        </div>
+                        <div class="panel-body">
+                            <h4 class="text-primary">INR 499 / year</h4>
+                            <ul class="list-unstyled">
+                                <li><i class="fa fa-check-circle text-success"></i> Access to all tutorials of all FOSS</li>
+                                <li><i class="fa fa-check-circle text-success"></i> Download tutorials, SRT files, and assignments</li>
+                                <li><i class="fa fa-check-circle text-success"></i> Access to any new FOSS added during the subscription period</li>
+                            </ul>
+                            <div class="form-group">
+                                <label for="fossSelectAll">Select FOSS:</label>
+                                <select class="form-control" id="fossSelectAll" disabled>
+                                    <option value="foss1">ALL</option>
+                                    <!-- Add more options dynamically if needed -->
+                                </select>
+                            </div>
+
+
+                            
+                            <button class="btn btn-primary" type="submit" style="width: 100%;" name="action" value="full">Make Payment</button>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- --- -->
+
+            {% endif %}
+        </div>
+    </form>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+              
+                <div class="subscription-container">
+                    {% if not subscribed %}
+                        <div class="subscription-box not-subscribed">
+                            <h3>User not subscribed</h3>
+                        </div>
+                    {% else %}
+                        <div class="subscription-box">
+                            <h3>Your Subscriptions:</h3>
+                            
+                            {% if clg_subscribed %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-graduation-cap icon" aria-hidden="true"></i> College Subscription</h4>
+                                    <p>You are part of a subscribed college.</p>
+                                    <p><strong>College:</strong> {{ clg_subscribed_name }}</p>
+                                    <p><strong>Subscription Expiry:</strong> {{ clg_subscribed_expiry }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if cdcontent_purchase %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-download" aria-hidden="true"></i> Cdcontent Subscription</h4>
+                                    <p>Access to CD content is available.</p>
+                                    <table class="table foss-access-table">
+                                        <thead>
+                                            <tr>
+                                                <th>FOSS</th>
+                                                <th>Language</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for access in cdcontent_purchase_data %}
+                                                <tr>
+                                                    <td>{{ access.foss__foss }}</td>
+                                                    <td>{{ access.lang__name }}</td>
+                                                    <td>{{ access.payment__expiry|date:"F j, Y, g:i a" }}</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="2">No FOSS access records available.</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    
+                                    
+                                </div>
+                            {% endif %}
+
+                            {% if ilw_participant %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-file icon" aria-hidden="true"></i> ILW Subscription:</h4>
+                                    <table class="table foss-access-table">
+                                        <thead>
+                                            <tr>
+                                                <th>FOSS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for access in ilw_participant_data %}
+                                                <tr>
+                                                    <td>{{ access.event__foss__foss }}</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="2">No FOSS access records available.</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                            
+                            {% if foss_purchase %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-file-code-o icon" aria-hidden="true"></i> FOSS Subscription</h4>
+                                    <p>Access to selected FOSS tutorials.</p>
+                                    <table class="table subscription-table">
+                                        <thead>
+                                            <tr>
+                                                <th>FOSS</th>
+                                                <th>Subscribed At</th>
+                                                <th>Expiry Date</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in foss_purchase_data %}
+                                                <tr>
+                                                    <td>{{ item.userfossaccess__foss__foss }}</td>
+                                                    <td>{{ item.created|date:"F j, Y, g:i a" }}</td>
+                                                    <td>{{ item.expiry|date:"F j, Y" }}</td>
+                                                    <td>₹{{ item.userfossaccess__amount }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user_subscribed %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-calendar icon" aria-hidden="true"></i> User Subscription</h4>
+                                    <p>Annual subscription details:</p>
+                                    
+                                    <table class="table subscription-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Subscribed At</th>
+                                                <th>Expiry Date</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in user_subscribed_data %}
+                                                <tr>
+                                                    <td>{{ item.created|date:"F j, Y, g:i a" }}</td>
+                                                    <td>{{ item.expiry|date:"F j, Y" }}</td>
+                                                    <td>₹{{ item.amount }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+
+                            
+                            
+                        </div>
+                    {% endif %}
+                </div>
+                
+            </div>
+
+        </div>
+
+    </div>
+    
+    
+    </div>
+
+
+
+{% endblock %}
+{% block jsblock %}
+    <script>
+      
+    </script>
+{% endblock %}
+{% block compressinlinejsblock %}
+    <script type="text/javascript">
+        $(document).ready(function(){
+            // alert('he');
+            $('#fossSelect').select2({
+        placeholder: "Select FOSS",
+        allowClear: true,
+        width: '100%'
+        });
+        
+        var fossValue = '{{ foss }}';
+        if(fossValue){
+            $('#fossSelect').val('{{foss}}').trigger('change');
+            console.log("SETTING AMOUNT *******");
+            $('.total-amount').show();
+            $('.amount').text('400');
+        }
+
+        $('#fossSelect').on('change', function(){
+            var selectedValues = $(this).val();
+            if(selectedValues && selectedValues.length > 0){
+                $('.total-amount').show();
+                total = selectedValues.length * {{foss_price}};
+                $('.amount').text('INR ' + total)
+            }else{
+                $('.total-amount').hide();
+            }
+        })
+    });
+
+    </script>
+
+   
+{% endblock %}
+{% block uncompressjsblock %}
+
+<!-- Include jQuery (already using jQuery 1.11.0) -->
+<!-- <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script> -->
+
+<!-- Include Bootstrap (already using Bootstrap 3.3.1) -->
+<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script> -->
+
+<!-- Include Bootstrap Multiselect JS -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script> -->
+ <!-- Include jQuery (already using jQuery 1.11.0) -->
+<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+
+<!-- Include Select2 JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+    
+    
+{% endblock %}
+

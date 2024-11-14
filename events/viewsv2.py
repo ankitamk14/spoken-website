@@ -2808,6 +2808,8 @@ def payment_success(request):
           context['name'] = sd.name
           context['date'] = sd.created
           transaction = add_transaction(purpose, sd.id, requestType, userId, amount, reqId, transId, refNo, provId, status, msg)
+          sd.save()
+          print("donate: added transaction")
           #send email
           email_status, status_msg = send_transaction_email(sd.email, context)
           sd.mail_status = email_status

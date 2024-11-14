@@ -225,3 +225,13 @@ class SchoolDonationForm(forms.ModelForm):
     class Meta:
         model = SchoolDonation
         fields = ['name', 'email', 'contact', 'state', 'city', 'address', 'amount', 'note']
+
+class FossSubscriptionForm(forms.ModelForm):
+    class Meta:
+        model = FossSubscription
+        fields = ['user', 'reqId', 'amount', 'note' ]
+
+class UserSubscriptionForm(forms.ModelForm):
+    class Meta:
+        model = UserSubscription
+        fields = ['user', 'reqId', 'amount', 'note' ]

@@ -8,8 +8,9 @@ from django.core.exceptions import ValidationError
 # Spoken Tutorial Stuff
 from creation.models import TutorialResource, FossCategory
 from events.models import Testimonials, InductionInterest, MediaTestimonials
+from donate.models import UserSubscription, FossSubscription
 
-
+# from .forms import UserSubscriptionForm, FossSubscriptionForm
 class KeywordSearchForm(forms.Form):
     q = forms.CharField(required=True)
 
@@ -308,3 +309,4 @@ class ExpressionForm(forms.ModelForm):
         borrow_laptop = cleaned_data['borrow_laptop']
         if bring_laptop.lower() == 'no' and not borrow_laptop:
             self.add_error('borrow_laptop', 'field is required.')
+

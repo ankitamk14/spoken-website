@@ -209,8 +209,9 @@ def calculate_expiry():
 @csrf_exempt
 def encrypted_data(request, obj, purpose):
     userId = "0" if purpose == "school_donation" else str(request.user.id)
+    name = request.user.first_name if purpose == "foss_subscription" else str(obj.name)
     STdata = ''
-    user_name = obj.name
+    user_name = name
     amount = obj.amount
     purpose = purpose+"NEW"+str(obj.pk)
     request_id = obj.reqId
@@ -222,16 +223,19 @@ def encrypted_data(request, obj, purpose):
 @csrf_exempt
 def get_final_data(request, obj, purpose):
     userId = "0" if purpose == "school_donation" else str(request.user.id)
+    name = request.user.first_name if purpose == "foss_subscription" else str(obj.name)
+    print(f"\033[93m name ****** {name} \033[0m")
     data = {
         'reqId' :  obj.reqId,
         'userId': userId,
-        'name': obj.name,
+        'name': name,
         'amount': obj.amount,
         'purpose': purpose+"NEW"+str(obj.pk) ,
         'channelId': CHANNEL_ID,
         'target': TARGET,
         'random': encrypted_data(request, obj, purpose)
     }
+    print(f"\033[92m returning \033[0m")
     return data
 
 
@@ -399,3 +403,4 @@ def school_donation(request):
     else:
         form = SchoolDonationForm()
     return render(request, 'donate/school_donation.html', {'form': form})
+

@@ -3,6 +3,7 @@ import json
 import os
 from urllib.parse import quote, unquote_plus
 from urllib.request import urlopen
+from dateutil.relativedelta import relativedelta
 
 # Third Party Stuff
 from django.conf import settings
@@ -28,14 +29,21 @@ from creation.views import get_video_info
 from events.views import get_page
 from forums.models import Question, Answer
 from config import FOSS_FOR_ANALYTICS, MONGO_PORT, MONGO_USER, MONGO_PASS,\
- MONGO_HOST, MONGO_DB
+ MONGO_HOST, MONGO_DB, CHANNEL_ID, INDIVIDUAL_FOSS_SUBSCRIPTION, ALL_FOSS_SUBSCRIPTION
 from .filters import NewsStateFilter, MediaTestimonialsFossFilter
 from .forms import *
 from .search import search_for_results
+from events import display
+from training.models import Participant
 
 import pymongo
 from uuid import getnode as get_mac
 import socket
+from donate.subscription import check_auth_external_roles
+from donate.forms import FossSubscriptionForm, UserSubscriptionForm, UserFossAccess
+from donate.views import get_final_data
+from donate.models import Payee, CdFossLanguages
+
 def is_resource_person(user):
     """Check if the user is having resource person  rights"""
     if user.groups.filter(name='Resource Person').count() == 1:
@@ -284,31 +292,41 @@ def archived_tutorial_search(request):
     return render(request, 'spoken/templates/archived_tutorial_search.html', context)
 
 def is_valid_user(user,foss,lang):
-    allowed_internal_roles = getattr(settings, 'ALLOWED_INTERNAL_ROLES', [1,4,5,6,7,8,9,10,15,20]) #IDs of auth_group 
-    # 1: Resource Person, 4:Contributor, 5:External-Contributor, 6: Video-Reviewer, 7:Domain-Reviewer, 8: Quality-Reviewer
-    # 9: Administrator, 10:Event Manager, 15:Content-Editor, 20:Forums-Admin
+    # If foss is added by fossee, it is accessible to all
     foss = FossCategory.objects.get(foss=foss)
+    
     if foss.is_fossee:
-        return True
+        print(f"\033[92m It is added by FOSSEE - returning true  \033[0m")
+        return True # No restriction on tutorials added by fossee team
+    else:
+        print(f"\033[91m It is not added by fossee \033[0m")
+    
     if isinstance(user,User):
+         # Check if the user has ST internal roles
+        allowed_internal_roles = getattr(settings, 'ALLOWED_INTERNAL_ROLES', [1,9,10,15,20]) #IDs of auth_group 
+        # 1: Resource Person, 9: Administrator, 10:Event Manager, 15:Content-Editor, 20:Forums-Admin
         groups = user.groups.all().values_list('id',flat=True)
+        print(f"\033[92m user belongs to groups : {groups} \033[0m")
         allowed_grps = set(allowed_internal_roles).intersection(set(groups))
+        print(f"\033[92m allowed_grps to view tutorials : {allowed_grps} \033[0m")
         if allowed_grps:
+            print(f"\033[92m The user belongs to allowed group - returning true  \033[0m")
             return True
+        else:
+            print(f"\033[91m The user does not belong to the allowed group - returning false \033[0m")
         try:
-            ut = UserType.objects.get(user=user)
-            subs = ut.subscription
-            ilw = ut.ilw
-            foss = str(FossCategory.objects.get(foss=foss).id)
-            lang = Language.objects.get(name=lang).id
-            if subs:
-                if datetime.date.today() <= subs:
-                    return True
-            if ilw:
-                if foss in ilw and lang in ilw.get(foss, []):
-                    return True
-        except UserType.DoesNotExist:
+            # Check if the user belongs to paid college or has paid for cdcontent/ilw/subscription
+            print(f"\033[93m Checking for subscribed users ....... \033[0m")
+            is_authorized = check_auth_external_roles(user, groups, foss, lang)
+            if not is_authorized:
+                print(f"\033[91m *** The user is logged in but not subscribed in any way *** \033[0m")
+            return is_authorized
+        except Exception as e:
+            print(f"\033[91m Exception while checking : {str(e)} \033[0m")
             return False
+    else:
+        print(f"\033[91m It is an anon user - returning false \033[0m")
+    
     return False
 
 
@@ -317,13 +335,19 @@ def watch_tutorial(request, foss, tutorial, lang):
         foss = unquote_plus(foss)
         # is_valid_user_for_tut = is_valid_user(request.user,foss,lang)
         is_valid_user_for_tut = True #Temporary making videos available to all
+        print(f"\033[93m Checking for user={request.user} foss={foss} lang={lang} \033[0m")
+        is_authorized_user = is_valid_user(request.user, foss, lang) 
         tutorial = unquote_plus(tutorial)
         
         td_rec = TutorialDetail.objects.get(foss__foss=foss, tutorial=tutorial)
-        tr_rec = TutorialResource.objects.select_related().get(tutorial_detail=td_rec, language=Language.objects.get(name=lang))
+        
+        print(f"\033[93m td_rec={td_rec}  lang={lang} \033[0m")
+        # tr_rec = TutorialResource.objects.select_related().get(tutorial_detail=td_rec, language=Language.objects.get(name=lang))
+        tr_rec = TutorialResource.objects.get(id=1)
         tr_recs = TutorialResource.objects.select_related('tutorial_detail').filter(Q(status=1) | Q(status=2), tutorial_detail__foss=tr_rec.tutorial_detail.foss, language=tr_rec.language).order_by(
             'tutorial_detail__foss__foss', 'tutorial_detail__level', 'tutorial_detail__order', 'language__name')
     except Exception as e:
+        print(f"\033[91m Exception : {str(e)} \033[0m")
         messages.error(request, str(e))
         return HttpResponseRedirect('/')
     video_path = settings.MEDIA_ROOT + "videos/" + \
@@ -362,7 +386,7 @@ def watch_tutorial(request, foss, tutorial, lang):
         '-sorting_value',
         '-date_created'
     )
-
+    print(f"\033[97m is_authorized_user : {is_authorized_user} \033[0m")
     context = {
         'tr_rec': tr_rec,
         'tr_recs': tr_recs,
@@ -372,9 +396,10 @@ def watch_tutorial(request, foss, tutorial, lang):
         'tutorial_path': str(tr_rec.tutorial_detail.foss_id) + '/' + str(tr_rec.tutorial_detail_id) + '/',
         'script_base': settings.SCRIPT_URL,
         'perform_analysis':analytics,
-        'is_valid_user_for_tut':is_valid_user_for_tut,
+        # 'is_valid_user_for_tut':is_valid_user_for_tut,
         'video_play_time':getattr(settings, 'VIDEO_TIME', 15),
-        'questions': sorted_questions
+        'questions': sorted_questions,
+        'user_authorized': is_authorized_user
     }
     return render(request, 'spoken/templates/watch_tutorial.html', context)
 
@@ -953,3 +978,130 @@ def saveVideoData(request):
 def bookfair(request):
     context = {}
     return render(request, 'spoken/templates/nep_bookfair.html',context)
+
+
+@csrf_exempt
+def subscription(request):
+    print(f"\033[92m request GET ****** {request.GET} \033[0m")
+    form = "FORM"
+    user = request.user
+    context = {}
+    context['foss'] = request.GET.get('foss', '')
+    if request.method == "POST":
+        type = request.POST.get("action")
+        current_date = dt.datetime.today()
+        expiry = current_date + relativedelta(years=1)
+        # reqId = CHANNEL_ID+str(display.value(dt.datetime.now().strftime('%Y%m%d%H%M%S'))[0:20])
+        reqId = "req-id"
+        if type == "partial":
+            amount=100
+            # expiry=''
+            fosses = request.POST.get('fosses',[])
+            amount = len(fosses) * INDIVIDUAL_FOSS_SUBSCRIPTION
+            obj = FossSubscription.objects.create(user=request.user, reqId=reqId, amount=amount,expiry=expiry)
+            fosses = request.POST.getlist('fosses',[])
+            print(f"\033[92m fosses ******: {fosses} \033[0m")
+            for foss in fosses:
+                
+                UserFossAccess.objects.create(user=request.user, subscription=obj,foss_id=foss, amount=INDIVIDUAL_FOSS_SUBSCRIPTION)
+
+        if type == "full":
+            amount = ALL_FOSS_SUBSCRIPTION
+            obj = UserSubscription.objects.create(user=request.user, reqId=reqId, expiry=expiry, amount=amount)
+        print(f"\033[91m TYPE ****** {type} \033[0m")
+        print(f"\033[92m IT IS POST \033[0m")
+        print(f"\033[93m request.POST : {request.POST} \033[0m")
+        # return render(request, 'spoken/templates/subscription.html', {'form': form, 'type': 'POST'})    
+        print(f"\033[92m obj - {dir(obj)} \033[0m")
+        data = get_final_data(request,obj,"foss_subscription")
+        print(f"\033[93m rendering payment_status \033[0m")
+        return render(request, 'payment_status.html', data)
+    print(f"\033[92m SENDING FORM \033[0m")
+    # print(form)
+    fosses = FossCategory.objects.filter(show_on_homepage=1)
+
+    #check college subscription
+    #Need to check for student, organiser and invigilator
+    try:
+        is_clg_subscribed = False
+        sm = StudentMaster.objects.select_related('batch__academic').get(student__user=user)
+        ac = sm.batch.academic
+        # print(f"\033[93m ac: {ac.batch.academic} \033[0m")
+        latest_academic_key = AcademicKey.objects.filter(academic=ac).order_by('-expiry_date').first()
+        print(f"\033[93m latest_academic_key : {latest_academic_key} \033[0m")
+        if latest_academic_key:
+            print(f"\033[92m LATEST ACADEMIC KEY \033[0m")
+            context['clg_subscribed_expiry'] = latest_academic_key.expiry_date
+            context['clg_subscribed_name'] = ac.institution_name
+            is_clg_subscribed = latest_academic_key.expiry_date >= dt.date.today()
+        else:
+            print(f"\033[91m NOT LATEST ACADEMIC \033[0m")
+    
+    except Exception as e:
+        print(f"\033[91m Exception : {e} \033[0m")
+        is_clg_subscribed = False
+
+    #check cdcontent purchase
+    try:
+        is_cdcontent_purchase = False
+        payee_exists = Payee.objects.filter(user=user, purpose='cdcontent', status=1).exists()
+        if payee_exists:
+            print(f"\033[92m PAYEE EXISTS ****** \033[0m")
+            is_cdcontent_purchase = True
+            context['cdcontent_purchase_data'] = CdFossLanguages.objects.filter(payment__user=user).values('foss__foss', 'payment__expiry','lang__name')
+        else:
+            print(f"\033[91m NO PAYEE \033[0m")
+    except Exception as e:
+        is_cdcontent_purchase = False
+
+
+    #check ilw purchase
+    is_ilw_participant = False
+    participant = Participant.objects.filter(user=user, payment_status__status=1)
+    if participant.exists:
+        is_ilw_participant = True
+        context['ilw_participant_data'] = participant.values('event__foss__foss')
+    
+    #check if user is subscribed for all the fosses
+    is_user_subscribed = False
+
+    user_subscription = UserSubscription.objects.filter(user=user)
+    if user_subscription.exists:
+        is_user_subscribed = True
+        context['user_subscribed_data'] = user_subscription.values('created', 'expiry', 'amount')
+        context['valid_active_user_subscription'] = user_subscription.filter(expiry__gte=dt.date.today())
+
+    #check if user is subscribed for individual foss
+    is_foss_purchase = False
+    fs = FossSubscription.objects.filter(user=user)
+    if fs.exists():
+        is_foss_purchase = True
+        context['foss_purchase_data'] = FossSubscription.objects.filter(user=user).values('userfossaccess__amount', 'created', 'expiry', 'userfossaccess__foss__foss')
+
+
+    context['foss_price'] = 400
+    context['fosses'] = fosses
+
+
+    # context['clg_subscribed'] = is_clg_subscribed
+    is_clg_subscribed = True
+    context['clg_subscribed'] = is_clg_subscribed
+    context['cdcontent_purchase'] = is_cdcontent_purchase
+    context['ilw_participant'] = is_ilw_participant
+    context['user_subscribed'] = is_user_subscribed
+    context['foss_purchase'] = is_foss_purchase
+
+    print(f"\033[93m is_clg_subscribed :: {is_clg_subscribed}; is_cdcontent_purchase: {is_cdcontent_purchase} \033[0m")
+    print(f"\033[93m is_ilw_participant :: {is_ilw_participant}; is_user_subscribed: {is_user_subscribed} \033[0m")
+    print(f"\033[93m is_foss_purchase :: {is_foss_purchase} \033[0m")
+
+    subscribed = is_clg_subscribed or is_cdcontent_purchase or is_ilw_participant or is_user_subscribed or is_foss_purchase
+    print(f"\033[92m subscribed : {subscribed} \033[0m")
+    context['subscribed'] = subscribed
+    return render(request, 'spoken/templates/subscription.html', context)
+
+@csrf_exempt
+def temp(request):
+    data = {}
+    data['status'] = 'F'
+    return render(request, 'payment_success.html', data)

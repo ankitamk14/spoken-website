@@ -43,7 +43,8 @@
                 The process may take upto 5 minutes        
             </span>
         </h4>
-        <form action="{{target}}" name="test" method="post" class='form-horizontal' >
+        <!-- <form action="{{target}}" name="test" method="post" class='form-horizontal' > -->
+          <form action="/temp" name="test" method="post" class='form-horizontal' >
             <input type="hidden" name="reqId" value="{{reqId}}" />
             <input type="hidden" name="userId" value="{{userId}}" />
             <input type="hidden" name="name" value="{{name}}" />
@@ -59,8 +60,12 @@
 <script type="text/javascript">
     function loading()
     {   
-        window.document.test.submit();        
-        return;
+        
+        // window.document.test.submit();        
+        // return;
+        setTimeout(function() {
+            window.document.test.submit();
+        }, 60000);
     }
 </script>
 {% endblock %}
