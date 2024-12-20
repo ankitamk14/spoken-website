@@ -333,8 +333,6 @@ def is_valid_user(user,foss,lang):
 def watch_tutorial(request, foss, tutorial, lang):
     try:
         foss = unquote_plus(foss)
-        # is_valid_user_for_tut = is_valid_user(request.user,foss,lang)
-        is_valid_user_for_tut = True #Temporary making videos available to all
         print(f"\033[93m Checking for user={request.user} foss={foss} lang={lang} \033[0m")
         is_authorized_user = is_valid_user(request.user, foss, lang) 
         tutorial = unquote_plus(tutorial)
@@ -1041,6 +1039,16 @@ def subscription(request):
         print(f"\033[91m Exception : {e} \033[0m")
         is_clg_subscribed = False
 
+    try:
+        is_org_clg_subscribed = False
+        ac = Organiser.objects.get(user=user).academic
+        payment_dates = AcademicKey.objects.filter(academic=ac).order_by('-expiry_date').values('ac_pay_status__payment_date','expiry_date')
+        context['org_subscribed_name'] = ac.institution_name
+        context['org_payment_dates'] = list(payment_dates)
+        if payment_dates:
+            is_org_clg_subscribed = True
+    except Exception as e:
+        is_org_clg_subscribed = False
     #check cdcontent purchase
     try:
         is_cdcontent_purchase = False
@@ -1048,7 +1056,7 @@ def subscription(request):
         if payee_exists:
             print(f"\033[92m PAYEE EXISTS ****** \033[0m")
             is_cdcontent_purchase = True
-            context['cdcontent_purchase_data'] = CdFossLanguages.objects.filter(payment__user=user).values('foss__foss', 'payment__expiry','lang__name')
+            context['cdcontent_purchase_data'] = CdFossLanguages.objects.filter(payment__user=user).values('foss__foss', 'payment__expiry','lang__name','payment__created','payment__reqId')
         else:
             print(f"\033[91m NO PAYEE \033[0m")
     except Exception as e:
@@ -1058,15 +1066,17 @@ def subscription(request):
     #check ilw purchase
     is_ilw_participant = False
     participant = Participant.objects.filter(user=user, payment_status__status=1)
-    if participant.exists:
+    print(f"\033[92m PARTICIPANT ******* {participant.first()} \033[0m")
+    if participant.exists():
+        print(f"\033[92m participant.exists *******  \033[0m")
         is_ilw_participant = True
-        context['ilw_participant_data'] = participant.values('event__foss__foss')
+        context['ilw_participant_data'] = participant.values('event__foss__foss', 'event__event_start_date','event__event_end_date')
     
     #check if user is subscribed for all the fosses
     is_user_subscribed = False
 
     user_subscription = UserSubscription.objects.filter(user=user)
-    if user_subscription.exists:
+    if user_subscription.exists():
         is_user_subscribed = True
         context['user_subscribed_data'] = user_subscription.values('created', 'expiry', 'amount')
         context['valid_active_user_subscription'] = user_subscription.filter(expiry__gte=dt.date.today())
@@ -1084,10 +1094,12 @@ def subscription(request):
 
 
     # context['clg_subscribed'] = is_clg_subscribed
-    is_clg_subscribed = True
+    # is_clg_subscribed = True
     context['clg_subscribed'] = is_clg_subscribed
+    context['org_clg_subscribed'] = is_org_clg_subscribed
     context['cdcontent_purchase'] = is_cdcontent_purchase
     context['ilw_participant'] = is_ilw_participant
+    print(f"\033[92m IS ILW PARTICIPANT : {is_ilw_participant} \033[0m")
     context['user_subscribed'] = is_user_subscribed
     context['foss_purchase'] = is_foss_purchase
 

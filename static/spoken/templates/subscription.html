@@ -221,7 +221,7 @@
                 <div class="subscription-container">
                     {% if not subscribed %}
                         <div class="subscription-box not-subscribed">
-                            <h3>User not subscribed</h3>
+                            <h3>You do not have any active subscription. Please check out above options.</h3>
                         </div>
                     {% else %}
                         <div class="subscription-box">
@@ -229,23 +229,48 @@
                             
                             {% if clg_subscribed %}
                                 <div class="subscription-details">
-                                    <h4><i class="fa fa-graduation-cap icon" aria-hidden="true"></i> College Subscription</h4>
-                                    <p>You are part of a subscribed college.</p>
-                                    <p><strong>College:</strong> {{ clg_subscribed_name }}</p>
+                                    <h4><i class="fa fa-graduation-cap icon" aria-hidden="true"></i> Institution Subscription</h4>
+                                    <p>You are part of a subscribed institution.</p>
+                                    <p><strong>Institution Name:</strong> {{ clg_subscribed_name }}</p>
                                     <p><strong>Subscription Expiry:</strong> {{ clg_subscribed_expiry }}</p>
+                                </div>
+                            {% endif %}
+
+                            {% if org_clg_subscribed %}
+                                <div class="subscription-details">
+                                    <h4><i class="fa fa-graduation-cap icon" aria-hidden="true"></i> Institution Subscription (Organiser)</h4>
+                                    <table class="table foss-access-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sr. No</th>
+                                                <th>Payment Date</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in org_payment_dates %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>{{ item.ac_pay_status__payment_date}}</td>
+                                                    <td>{{ item.expiry_date}}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        </table>
                                 </div>
                             {% endif %}
                             
                             {% if cdcontent_purchase %}
                                 <div class="subscription-details">
-                                    <h4><i class="fa fa-download" aria-hidden="true"></i> Cdcontent Subscription</h4>
-                                    <p>Access to CD content is available.</p>
+                                    <h4><i class="fa fa-download icon" aria-hidden="true"></i>  Cdcontent Subscription</h4>
                                     <table class="table foss-access-table">
                                         <thead>
                                             <tr>
                                                 <th>FOSS</th>
                                                 <th>Language</th>
+                                                <th>Payment Date</th>
                                                 <th>Expiry Date</th>
+                                                <th>Request ID</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -253,7 +278,9 @@
                                                 <tr>
                                                     <td>{{ access.foss__foss }}</td>
                                                     <td>{{ access.lang__name }}</td>
+                                                    <td>{{access.payment__created}}</td>
                                                     <td>{{ access.payment__expiry|date:"F j, Y, g:i a" }}</td>
+                                                    <td>{{ access.payment__reqId}}</td>
                                                 </tr>
                                             {% empty %}
                                                 <tr>
@@ -274,12 +301,16 @@
                                         <thead>
                                             <tr>
                                                 <th>FOSS</th>
+                                                <th>Event Start Date</th>
+                                                <th>Event End Date</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for access in ilw_participant_data %}
                                                 <tr>
                                                     <td>{{ access.event__foss__foss }}</td>
+                                                    <td>{{ access.event__event_start_date }}</td>
+                                                    <td>{{ access.event__event_end_date }}</td>
                                                 </tr>
                                             {% empty %}
                                                 <tr>

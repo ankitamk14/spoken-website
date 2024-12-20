@@ -3,6 +3,7 @@ from events.models import Organiser, Student, StudentMaster, StudentBatch, Acade
 from .models import  CdFossLanguages, Payee, UserFossAccess, UserSubscription, PaymentTransaction
 # from .models import UserFossAccess, CdFossLanguages, Payee
 from training.models import Participant
+from django.core.mail import send_mail
 
 
 def check_auth_external_roles(user, groups, foss, lang):
@@ -98,6 +99,11 @@ def is_user_subscribed(user):
 
 def is_foss_subscribed(user,foss,lang):
     print(f"\033[93m foss: {type(foss)} lang: {type(lang)} \033[0m")
+    d1 = UserFossAccess.objects.filter(user=user, foss_id=foss.id).first()
+    if d1:
+        print(f"\033[92m d1 : {d1.foss_id} \033[0m")
+
+    print(f"\033[92m d1 : {foss.id} \033[0m")
     access = UserFossAccess.objects.filter(user=user, foss=foss,subscription__fosssubscriptiontransactions__status='S').order_by('-subscription__expiry').first()
     return access and access.subscription.expiry >= date.today()
    
@@ -118,3 +124,137 @@ def has_ilw_access(user, foss, lang):
     else:
         print(f"\033[91m Participant do not exists \033[0m")
     return participant
+
+
+def send_insti_subscription_mail(user,ac, academickey, transaction):
+    from_email = 'no-reply@spoken-tutorial.org'
+    subject = "Spoken Tutorial Subscription Details"
+    message = """
+    Dear {name_of_the_payer},
+    Thank you for subscribing! You now have full access to all FOSS resources.
+    Below are the institution subscription details:
+
+    Institution Name: {institution_name}
+    Academic Code: {academic_code}
+    Transaction ID: {transaction_id}
+    Reference ID: {reference_id}
+    Payee Name: {name_of_the_payer}
+    Payee Email: {email}
+    Amount Paid: {amount}
+    Payment Date: {entry_date}
+    Subscription Expiry: {expiry_date}
+    
+    If you have any questions or need further assistance, feel free to contact training manager.
+
+    Regards,
+    Spoken Tutorial Team,
+    IIT Bombay.
+    """.format(
+        institution_name=ac.institution_name,
+        academic_code=ac.academic_code,
+        name_of_the_payer=transaction.name_of_the_payer,
+        email=transaction.email,
+        amount=transaction.amount,
+        entry_date=transaction.entry_date,
+        expiry_date=academickey.expiry_date
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=from_email,
+            recipient_list=[transaction.email],
+            fail_silently=False
+        )
+    except Exception as e:
+        print(e)
+
+
+def send_user_subscription_mail(user, usersubscription, transaction):
+    user = usersubscription.user
+    from_email = 'no-reply@spoken-tutorial.org'
+    subject = "Spoken Tutorial Subscription Details"
+    message = """
+    Dear {name_of_the_payer},
+    Thank you for subscribing! You now have full access to all FOSS resources.
+    Below are the user subscription details:
+
+    Transaction ID: {transaction_id}
+    Reference ID: {reference_id}
+    Payee Name: {name_of_the_payer}
+    Payee Email: {email}
+    Amount Paid: {amount}
+    Payment Date: {entry_date}
+    Subscription Expiry: {expiry_date}
+
+    Regards,
+    Spoken Tutorial Team,
+    IIT Bombay.
+    """.format(
+        name_of_the_payer=user.last_name,
+        email=user.email,
+        amount=transaction.amount,
+        entry_date=usersubscription.created,
+        expiry_date=usersubscription.expiry_date
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=from_email,
+            recipient_list=[user.email],
+            fail_silently=False
+        )
+    except Exception as e:
+        print(e)
+        usersubscription.mail_status = 0
+        usersubscription.mail_response = str(e)
+        usersubscription.save()
+
+
+def send_foss_subscription_mail(user, fosssubscription, transaction,foss):
+    user = fosssubscription.user
+    from_email = 'no-reply@spoken-tutorial.org'
+    subject = "Spoken Tutorial Subscription Details"
+    message = """
+    Dear {name_of_the_payer},
+    Thank you for subscribing! 
+    Below are the user subscription details:
+
+    Transaction ID: {transaction_id}
+    Reference ID: {reference_id}
+    Payee Name: {name_of_the_payer}
+    Payee Email: {email}
+    Amount Paid: {amount}
+    Payment Date: {entry_date}
+    Subscription Expiry: {expiry_date}
+    FOSS subscribed: {foss}
+    Regards,
+    Spoken Tutorial Team,
+    IIT Bombay.
+    """.format(
+        name_of_the_payer=user.last_name,
+        email=user.email,
+        amount=transaction.amount,
+        entry_date=fosssubscription.created,
+        expiry_date=fosssubscription.expiry_date,
+        foss=foss
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=from_email,
+            recipient_list=[user.email],
+            fail_silently=False
+        )
+    except Exception as e:
+        print(e)
+        fosssubscription.mail_status = 0
+        fosssubscription.mail_response = str(e)
+        fosssubscription.save()
+
+

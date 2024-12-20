@@ -334,7 +334,7 @@
                             {{ tr_rec|get_srt_path|safe }}
                         </video>
                         <div id="overlay">
-                            <p style="font-size: 1.5rem;">This is a sample video. To access the full content, please {% if user.is_authenticated %} <a href="http://127.0.0.1:8000/subscription">Subscribe</a> {% else %} <a href="http://127.0.0.1:8000/accounts/login/">Login</a> {% endif %} </p>
+                            <p style="font-size: 1.5rem;">This is a sample video. To access the full content, please {% if user.is_authenticated %} <a href="http://127.0.0.1:8000/subscription/?foss={{tr_rec.tutorial_detail.foss_id}}">Subscribe</a> {% else %} <a href="http://127.0.0.1:8000/accounts/login/?next={{request.path}}">Login</a> {% endif %} </p>
                         </div>
             </div>
 
@@ -501,16 +501,15 @@
                 <div class="list-group">
                     {% if tr_rec.common_content.assignment_status and tr_rec.common_content.assignment_status != 6 %}
                         <div  class="list-group-item-container">
-                            <!-- <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.assignment }}"{% else %}href="#"{% endif %} target="_blank" class="list-group-item"> -->
-                                <a href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.assignment }}" href="#" target="_blank" class="list-group-item">
+                            <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.assignment }}"{% else %}style="pointer-events: none; cursor: default;"{% endif %} target="_blank" class="list-group-item">
                                 <h4 class="list-group-item-heading"><i class="fa fa-1 fa-file-text"></i>&nbsp; Assignment</h4>
+                                {% if not user_authorized %} <i class="fa fa-lock" aria-hidden="true"></i> Restricted {% endif %}
                             </a>
                         </div>
                     {% endif %}
                     {% if tr_rec.common_content.code_status and tr_rec.common_content.code_status != 6 %}
                         <div  class="list-group-item-container">
-                            <!-- <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.code }}"{% else %}href="#"{% endif %} target="_blank" class="list-group-item"> -->
-                                <a href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.code }}" href="#" target="_blank" class="list-group-item">
+                            <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.code }}"{% else %}style="pointer-events: none; cursor: default;"{% endif %} target="_blank" class="list-group-item">
                                 <h4 class="list-group-item-heading"><i class="fa fa-1 fa-archive"></i> Code files</h4>
                                 {% with path=media_path|add:'videos/'|add:tutorial_path|add:'resources/'|add:tr_rec.common_content.code %}
                                     {% with code_files=path|get_zip_content %}
@@ -524,6 +523,7 @@
                                         {% endif %}
                                     {% endwith %}
                                 {% endwith %}
+                                {% if not user_authorized %} <i class="fa fa-lock" aria-hidden="true"></i> Restricted {% endif %}
                             </a>
                         </div>
                     {% endif %}
@@ -552,7 +552,7 @@
                     {% endif %}
                     {% if tr_rec.common_content.slide_status and tr_rec.common_content.slide_status != 6 %}
                         <div class="list-group-item-container">
-                            <a  {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.slide }}"{% else %}href="#"{% endif %} target="_blank" class="list-group-item">
+                            <a  {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.slide }}"{% else %}style="pointer-events: none; cursor: default;"{% endif %} target="_blank" class="list-group-item">
                                 <h4 class="list-group-item-heading"><i class="fa fa-1 fa-archive"></i> Slides</h4>
                                 {% with path=media_path|add:'videos/'|add:tutorial_path|add:'resources/'|add:tr_rec.common_content.slide %}
                                     {% with slide_files=path|get_zip_content %}
@@ -566,13 +566,15 @@
                                         {% endif %}
                                     {% endwith %}
                                 {% endwith %}
+                                {% if not user_authorized %} <i class="fa fa-lock" aria-hidden="true"></i> Restricted {% endif %}
                             </a>
                         </div>
                     {% endif %}
                     {% if tr_rec.common_content.additional_material_status and tr_rec.common_content.additional_material_status != 6 %}
                         <div  class="list-group-item-container">
-                            <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.additional_material }}"{% else %}href="#"{% endif%} target="_blank" class="list-group-item">
+                            <a {% if user_authorized %}href="{{ media_url }}videos/{{ tr_rec.tutorial_detail.foss_id }}/{{ tr_rec.tutorial_detail_id }}/resources/{{ tr_rec.common_content.additional_material }}"{% else %}style="pointer-events: none; cursor: default;"{% endif%} target="_blank" class="list-group-item">
                                 <h4 class="list-group-item-heading"><i class="fa fa-1 fa-file-text"></i>&nbsp; Additional reading material</h4>
+                                {% if not user_authorized %} <i class="fa fa-lock" aria-hidden="true"></i> Restricted {% endif %}
                             </a>
                         </div>
                     {% endif %}
